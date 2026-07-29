@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#103f37">
+  <meta name="description" content="A&M Craft & Brew order and production dashboard demo.">
+  <title>A&M Admin | Order Dashboard</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin-body">
+  <div class="admin-shell">
+    <aside class="admin-sidebar" id="adminSidebar">
+      <a class="brand admin-brand" href="index.html">
+        <span class="brand-mark">A<span>&</span>M</span>
+        <span class="brand-copy"><strong>Print Manager</strong><small>Admin dashboard</small></span>
+      </a>
+      <nav class="admin-nav" aria-label="Admin navigation">
+        <button class="active" data-view="overview"><span>⌂</span>Overview</button>
+        <button data-view="orders"><span>▤</span>Orders</button>
+        <button data-view="production"><span>▦</span>Production</button>
+        <button data-view="customers"><span>◎</span>Customers</button>
+        <button data-view="workers"><span>♙</span>Workers</button>
+        <button data-view="settings"><span>⚙</span>Settings</button>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="demo-badge"><strong>Demo mode</strong><span>Data disimpan pada browser ini.</span></div>
+        <a href="index.html">← Kembali ke website</a>
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <div class="topbar-left">
+          <button class="sidebar-toggle" id="sidebarToggle" aria-label="Buka menu">☰</button>
+          <div><p id="viewEyebrow">Dashboard</p><h1 id="viewTitle">Business overview</h1></div>
+        </div>
+        <div class="topbar-actions">
+          <button class="admin-icon-btn" id="seedOrders" title="Tambah sample orders">＋ Sample</button>
+          <button class="admin-primary-btn" id="newOrderBtn">+ New order</button>
+          <div class="admin-avatar">AM</div>
+        </div>
+      </header>
+
+      <section class="admin-content">
+        <div class="admin-view active" data-view-panel="overview">
+          <div class="stats-grid" id="statsGrid"></div>
+
+          <div class="dashboard-grid">
+            <section class="admin-card sales-card">
+              <div class="card-head"><div><p>Performance</p><h2>Order value</h2></div><select id="chartRange"><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select></div>
+              <div class="chart-wrap" id="salesChart" aria-label="Order value chart"></div>
+            </section>
+
+            <section class="admin-card status-card">
+              <div class="card-head"><div><p>Live queue</p><h2>Order status</h2></div><button class="plain-button" data-jump="production">View board →</button></div>
+              <div class="status-list" id="statusList"></div>
+            </section>
+          </div>
+
+          <section class="admin-card recent-card">
+            <div class="card-head"><div><p>Latest activity</p><h2>Recent orders</h2></div><button class="plain-button" data-jump="orders">View all →</button></div>
+            <div class="table-scroll"><table class="admin-table"><thead><tr><th>Order</th><th>Customer</th><th>Product</th><th>Due</th><th>Status</th><th>Estimate</th></tr></thead><tbody id="recentOrdersBody"></tbody></table></div>
+          </section>
+        </div>
+
+        <div class="admin-view" data-view-panel="orders">
+          <section class="admin-card full-card">
+            <div class="orders-toolbar">
+              <div><p class="admin-kicker">Order management</p><h2>All orders</h2></div>
+              <div class="toolbar-controls"><input type="search" id="orderSearch" placeholder="Search order, name or phone"><select id="orderFilter"><option value="all">All statuses</option></select><button class="secondary-button" id="exportCsv">Export CSV</button></div>
+            </div>
+            <div class="table-scroll"><table class="admin-table orders-table"><thead><tr><th>Order</th><th>Customer</th><th>Product</th><th>Qty</th><th>Status</th><th>Payment</th><th>Estimate</th><th></th></tr></thead><tbody id="ordersBody"></tbody></table></div>
+          </section>
+        </div>
+
+        <div class="admin-view" data-view-panel="production">
+          <div class="section-intro"><div><p class="admin-kicker">Production workflow</p><h2>Job board</h2></div><p>Move each order through artwork, printing, packing and delivery stages.</p></div>
+          <div class="kanban" id="kanbanBoard"></div>
+        </div>
+
+        <div class="admin-view" data-view-panel="customers">
+          <section class="admin-card full-card">
+            <div class="card-head"><div><p>Customer database</p><h2>Repeat customers</h2></div></div>
+            <div class="customer-grid" id="customerGrid"></div>
+          </section>
+        </div>
+
+        <div class="admin-view" data-view-panel="workers">
+          <div class="section-intro"><div><p class="admin-kicker">Folding & packing</p><h2>Worker assignments</h2></div><button class="admin-primary-btn" id="addWorker">+ Add worker</button></div>
+          <div class="worker-grid" id="workerGrid"></div>
+        </div>
+
+        <div class="admin-view" data-view-panel="settings">
+          <div class="settings-grid">
+            <section class="admin-card settings-card"><p class="admin-kicker">Store information</p><h2>Business settings</h2><label>Business name<input value="A&M Craft & Brew Enterprise"></label><label>Order email<input value="amcraftbrew@gmail.com"></label><label>Phone / WhatsApp<input placeholder="60XXXXXXXXXX"></label><button class="admin-primary-btn" id="saveSettings">Save locally</button></section>
+            <section class="admin-card settings-card danger-card"><p class="admin-kicker">Demo data</p><h2>Storage controls</h2><p>This GitHub Pages version stores orders in the visitor's browser. Connect Supabase for shared, secure multi-device data.</p><button class="secondary-button" id="clearOrders">Clear all browser orders</button></section>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="admin-modal" id="adminOrderModal" aria-hidden="true">
+    <div class="admin-modal-backdrop" data-close-admin-modal></div>
+    <div class="admin-modal-panel">
+      <button class="admin-modal-close" data-close-admin-modal>×</button>
+      <div id="adminOrderDetail"></div>
+    </div>
+  </div>
+
+  <div class="admin-modal" id="newOrderModal" aria-hidden="true">
+    <div class="admin-modal-backdrop" data-close-new-order></div>
+    <div class="admin-modal-panel compact-panel">
+      <button class="admin-modal-close" data-close-new-order>×</button>
+      <p class="admin-kicker">Manual entry</p><h2>Create order</h2>
+      <form id="newOrderForm" class="admin-form">
+        <div class="admin-form-grid"><label>Customer name<input name="customerName" required></label><label>Phone<input name="phone" required></label><label>Product<select name="product"><option value="sampul-raya">Sampul Duit Raya</option><option value="stickers">Sticker & Label</option><option value="photo-4r">4R Photo Printing</option><option value="polaroid">Polaroid & Mini Prints</option><option value="cards">Custom Cards</option><option value="bulk">Bulk / Corporate</option></select></label><label>Quantity<input name="quantity" type="number" min="1" value="100" required></label><label>Estimate (RM)<input name="estimate" type="number" min="0" step="0.01" value="50"></label><label>Due date<input name="dueDate" type="date"></label></div>
+        <label>Notes<textarea name="notes" rows="3"></textarea></label>
+        <button class="admin-primary-btn wide" type="submit">Create order</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="admin.js"></script>
+</body>
+</html>
