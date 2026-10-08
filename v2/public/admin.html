@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#143d36">
+<title>A&M Craft & Brew | Owner Dashboard V2</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="admin-v2.css">
+</head>
+<body>
+<header class="topbar"><a class="brand" href="/"><span class="brand-logo">A&M</span><span>Craft & Brew <small>Owner Dashboard V2</small></span></a><div class="top-actions"><span class="staging">STAGING</span><button id="logout" hidden>Log keluar</button></div></header>
+<main class="shell">
+<section id="loginPanel" class="login-card">
+<h1>Log masuk pemilik</h1>
+<p>Masukkan kata laluan admin yang disimpan sebagai Cloudflare Worker secret. Tiada kata laluan disimpan di laman ini.</p>
+<form id="loginForm"><label for="password">Kata laluan</label><input id="password" name="password" type="password" autocomplete="current-password" required minlength="12"><button type="submit">Log masuk</button></form>
+<p class="message" id="loginMessage" role="status"></p>
+</section>
+<section id="dashboard" hidden>
+<div class="page-intro"><div><p class="eyebrow">Pengurusan tempahan</p><h1>Business overview</h1><p>Semak sebut harga, artwork, affiliates dan tempahan pelanggan dari Cloudflare D1.</p></div><button id="refresh">↻ Refresh</button></div>
+<div class="metrics"><article><span>Jumlah tempahan</span><strong id="metricOrders">0</strong></article><article><span>Perlu semakan</span><strong id="metricQuotes">0</strong></article><article><span>Nilai anggaran</span><strong id="metricEstimate">RM0</strong></article><article><span>Affiliates aktif</span><strong id="metricAffiliates">0</strong></article></div>
+<div class="tabs" role="tablist" aria-label="Owner dashboard sections">
+<button class="active" data-tab="orders">Orders</button><button data-tab="products">Products</button><button data-tab="affiliates">Affiliates</button></div>
+<section id="ordersPanel" class="panel">
+<div class="panel-heading"><h2>Incoming orders</h2><input id="orderSearch" type="search" placeholder="Cari order atau pelanggan" aria-label="Cari tempahan"></div>
+<div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Product</th><th>Estimate</th><th>Status</th><th>Action</th></tr></thead><tbody id="ordersBody"></tbody></table></div>
+</section>
+<section id="productsPanel" class="panel" hidden><h2>Product pricing</h2><p>Anggaran harga: yuran asas + kuantiti × harga/unit, dengan penyesuaian material dan design.</p><div id="productEditors" class="product-grid"></div></section>
+<section id="affiliatesPanel" class="panel" hidden>
+<h2>Affiliate management</h2><p>Cipta pautan affiliate dan tetapkan peratusan individu. Belum ada payout automatik atau komisen terkumpul sehingga bayaran sebenar diintegrasikan.</p>
+<form id="newAffiliateForm" class="affiliate-form"><label>Nama<input name="name" required maxlength="120"></label><label>Kod unik<input name="code" required placeholder="AGENT-001" pattern="[A-Za-z0-9-]{3,30}"></label><label>Email<input name="email" type="email"></label><label>Telefon<input name="phone"></label><label>Komisen %<input name="commissionPct" type="number" min="0" max="30" step=".01" value="5" required></label><button type="submit">+ Cipta affiliate</button></form>
+<div class="table-wrap"><table><thead><tr><th>Affiliate</th><th>Kod rujukan</th><th>Komisen</th><th>Status</th><th>Pautan</th></tr></thead><tbody id="affiliatesBody"></tbody></table></div>
+</section>
+</section>
+<p id="feedback" class="feedback" role="status"></p>
+</main>
+<dialog id="orderDialog"><form method="dialog"><button class="close" aria-label="Tutup">×</button></form><div id="orderDetail"></div></dialog>
+<script src="admin-v2.js" defer></script>
+</body>
+</html>
