@@ -1,0 +1,24 @@
+{
+  "name": "amcraftbrew-v2",
+  "main": "./src/index.ts",
+  "compatibility_date": "2026-10-08",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "amcraft-v2",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "ARTWORKS",
+      "bucket_name": "amcraft-v2-artworks"
+    }
+  ]
+}
