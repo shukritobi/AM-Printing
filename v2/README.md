@@ -13,6 +13,21 @@ Phase 1 implementation is a quote-request workflow, not a live payment checkout.
 - Affiliate records and commission ledger exist in D1; commission is **not** accrued until real payment reconciliation is implemented.
 - Public website assets reuse the original branding and styling.
 
+## One-time Cloudflare staging deployment
+
+The GitHub workflow at `.github/workflows/v2-staging.yml` runs validation when code is pushed to `v2-development`. If the account credentials are present, it also provisions the dedicated D1 database and private R2 bucket, applies migrations, deploys the `amcraftbrew-v2` Worker and configures admin secrets.
+
+**Before automated deployment**, add these four encrypted repository secrets in GitHub -> Settings -> Secrets and variables -> Actions:
+
+1. `CLOUDFLARE_API_TOKEN`: a Cloudflare API token scoped to the correct account with Workers Scripts, D1 and R2 permissions. Never paste the token into code or chat.
+2. `CLOUDFLARE_ACCOUNT_ID`: the target account ID from Cloudflare dashboard.
+3. `AMCRAFT_ADMIN_PASSWORD`: a unique, strong password of at least 16 characters, to protect the owner dashboard.
+4. `AMCRAFT_SESSION_SECRET`: a cryptographically random string of at least 32 characters for signing login cookies.
+
+Push an update to `v2-development` after adding the secrets, or run the workflow manually if available in GitHub Actions. **Never merge the development branch into main to enable deployment.** The workflow deliberately exits without deploying if any secret is absent.
+
+The Worker runs on an isolated `workers.dev` staging URL when that feature is enabled. There is **no production-domain DNS change** and no live payment collection. Test the admin login, order submission, order tracking and artwork uploads before exposing staging to customers. In particular, apply WAF / bot-rate controls for admin login, order and upload API routes before broader distribution.
+
 ## Local setup
 From this folder:
 
