@@ -1,4 +1,4 @@
-PRAGMA foreign_keys = ON;
+-- D1 enables foreign key enforcement automatically.
 CREATE TABLE IF NOT EXISTS products (
   code TEXT PRIMARY KEY,
   name TEXT NOT NULL,
