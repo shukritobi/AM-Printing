@@ -200,6 +200,8 @@ async function route(req: Request, env: Env): Promise<Response> {
       const name=field(b.name,120), email=field(b.email,180), phone=field(b.phone,25),code=field(b.code,30).toUpperCase();
       const bps=Number(b.commissionBps);
       if (name.length<2 || !/^[A-Z0-9-]{3,30}$/.test(code) || !Number.isInteger(bps) || bps<0 || bps>3000) return error("Invalid affiliate details");
+      const already=await env.DB.prepare("SELECT id FROM affiliates WHERE code=? COLLATE NOCASE").bind(code).first();
+      if (already) return error("Affiliate code already exists",409);
       const id=crypto.randomUUID();
       await env.DB.prepare("INSERT INTO affiliates (id,code,name,email,phone,commission_bps,status) VALUES (?,?,?,?,?,?,'active')").bind(id,code,name,email||null,phone||null,bps).run();
       await audit(env.DB,"affiliate_created","affiliate",id);
