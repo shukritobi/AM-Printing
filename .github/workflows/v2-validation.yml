@@ -1,0 +1,33 @@
+name: A&M V2 validation
+on:
+  push:
+    branches: [v2-development]
+    paths:
+      - "v2/**"
+      - ".github/workflows/v2-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: v2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install packages
+        run: npm install --no-audit --no-fund
+      - name: Typecheck Worker
+        run: npm run typecheck
+      - name: Validate browser JavaScript
+        run: |
+          node --check public/app.js
+          node --check public/admin-v2.js
+      - name: Test D1 migration
+        run: python3 tests/check_schema.py
