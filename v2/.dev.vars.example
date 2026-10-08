@@ -1,0 +1,4 @@
+# Local development only. Never commit real credentials.
+ADMIN_PASSWORD=REPLACE_WITH_A_LONG_RANDOM_SECRET
+SESSION_SECRET=REPLACE_WITH_ANOTHER_LONG_RANDOM_SECRET
+# PAYMENT API DISABLED until gateway is verified.
