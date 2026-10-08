@@ -1,0 +1,109 @@
+name: A&M V2 Cloudflare staging
+on:
+  push:
+    branches: [v2-development]
+    paths:
+      - "v2/**"
+      - ".github/workflows/v2-staging.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: amcraft-v2-staging
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/v2-development'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: v2
+        shell: bash
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      ADMIN_PASSWORD: ${{ secrets.AMCRAFT_ADMIN_PASSWORD }}
+      SESSION_SECRET: ${{ secrets.AMCRAFT_SESSION_SECRET }}
+      WRANGLER_SEND_METRICS: "false"
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check credentials
+        id: auth
+        run: |
+          if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" || -z "$ADMIN_PASSWORD" || -z "$SESSION_SECRET" ]]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "### Staging deployment skipped: add four repository Actions secrets first." >> "$GITHUB_STEP_SUMMARY"
+            echo "CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, AMCRAFT_ADMIN_PASSWORD, AMCRAFT_SESSION_SECRET" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          if [[ $(printf %s "$ADMIN_PASSWORD" | wc -c) -lt 16 || $(printf %s "$SESSION_SECRET" | wc -c) -lt 32 ]]; then
+            echo "::error::Admin password must have 16+ characters, session secret 32+ characters."
+            exit 1
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Typecheck Worker
+        run: npm run typecheck
+      - name: Validate browser JS
+        run: |
+          node --check public/app.js
+          node --check public/admin-v2.js
+      - name: Validate D1 schema
+        run: python3 tests/check_schema.py
+      - name: Provision staging resources
+        if: steps.auth.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          get_db_id() {
+            npx wrangler d1 list --json | node -e '
+              let t="";process.stdin.on("data",x=>t+=x).on("end",()=>{
+                const p=JSON.parse(t),arr=Array.isArray(p)?p:(p.result||p.databases||[]);
+                const hit=arr.find(x=>x.name==="amcraft-v2");
+                process.stdout.write(hit?.uuid||hit?.id||"");
+              });'
+          }
+          id="$(get_db_id)"
+          if [[ -z "$id" ]]; then
+            npx wrangler d1 create amcraft-v2 --location apac
+            id="$(get_db_id)"
+          fi
+          if [[ ! "$id" =~ ^[0-9a-fA-F-]{36}$ ]]; then
+            echo "::error::D1 UUID not found; deploy aborted."
+            exit 1
+          fi
+          DB_ID="$id" node - <<'NODE'
+          const fs=require("node:fs"),c=JSON.parse(fs.readFileSync("wrangler.jsonc","utf8"));
+          if(c.name!=="amcraftbrew-v2"||c.d1_databases?.[0]?.database_name!=="amcraft-v2")throw Error("Invalid staging configuration");
+          c.d1_databases[0].database_id=process.env.DB_ID;
+          fs.writeFileSync("wrangler.jsonc",JSON.stringify(c,null,2)+"\n");
+          NODE
+          if ! npx wrangler r2 bucket list | grep -Fq "amcraft-v2-artworks"; then
+            npx wrangler r2 bucket create amcraft-v2-artworks
+          fi
+          npx wrangler r2 bucket list | grep -F "amcraft-v2-artworks"
+          npx wrangler d1 migrations apply amcraft-v2 --remote
+          echo "D1 amcraft-v2 and private R2 amcraft-v2-artworks provisioned." >> "$GITHUB_STEP_SUMMARY"
+      - name: Deploy isolated Worker and secrets
+        if: steps.auth.outputs.ready == 'true'
+        run: |
+          set -euo pipefail
+          npx wrangler deploy 2>&1 | tee /tmp/amcraft-v2-deploy.txt
+          printf '%s' "$ADMIN_PASSWORD" | npx wrangler secret put ADMIN_PASSWORD
+          printf '%s' "$SESSION_SECRET" | npx wrangler secret put SESSION_SECRET
+          url="$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' /tmp/amcraft-v2-deploy.txt | head -n 1 || true)"
+          if [[ -n "$url" ]]; then
+            echo "### Staging preview: $url" >> "$GITHUB_STEP_SUMMARY"
+            curl -fsS --retry 5 --retry-delay 2 "$url/api/health" | node -e '
+              let t="";process.stdin.on("data",x=>t+=x).on("end",()=>{
+                const j=JSON.parse(t);
+                if(j.service!=="amcraftbrew-v2"||j.paymentEnabled!==false)process.exit(1);
+                console.log("Health check passed: no live payment processing.");
+              });'
+          else
+            echo "Worker deployed; check Cloudflare if workers.dev preview is not enabled." >> "$GITHUB_STEP_SUMMARY"
+          fi
